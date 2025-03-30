@@ -10,14 +10,21 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.LaptopShop.domain.Transactions;
+import com.example.LaptopShop.service.BankTransactionService;
+import com.example.LaptopShop.service.TransactionCacheService;
 import com.example.LaptopShop.service.TransactionService;
 
 @Controller
 public class DashboardController {
     private final TransactionService transactionService;
+    private final BankTransactionService bankTransactionService;
+    private TransactionCacheService transactionCacheService;
 
-    public DashboardController(TransactionService transactionService) {
+    public DashboardController(TransactionService transactionService, BankTransactionService bankTransactionService,
+            TransactionCacheService transactionCacheService) {
         this.transactionService = transactionService;
+        this.bankTransactionService = bankTransactionService;
+        this.transactionCacheService = transactionCacheService;
     }
 
     @GetMapping("/admin")
@@ -26,11 +33,16 @@ public class DashboardController {
     }
 
     @GetMapping("/client")
-    public String getDashBoardClient(Model model,
-            @ModelAttribute("transactions") List<Map<String, String>> transactions) {
-        // List<Transactions> transactions =
-        // this.transactionService.getAllTransaction();
-        model.addAttribute("transactions", transactions);
+    public String getDashBoardClient(Model model) {
+        List<Map<String, String>> transactionsCache = this.transactionCacheService.getTransactions();
+        if (transactionsCache.size() != 0) {
+            model.addAttribute("transactions", transactionsCache);
+        } else {
+            List<Map<String, String>> transactions = this.bankTransactionService.getBankTransactions();
+            model.addAttribute("transactions", transactions);
+            transactionCacheService.setTransactions(transactions);
+        }
+
         return "admin/dashboard/show2";
     }
 }

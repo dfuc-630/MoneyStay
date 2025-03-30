@@ -48,7 +48,7 @@
                                 <h1 class="display-5 fw-bold">MoneyStay !</h1>
                                 <p class="fs-4">MoneyStay là một nền tảng quản lý tài chính cá nhân được thiết kế giúp
                                     bạn kiểm soát thu nhập, chi tiêu và tiết kiệm một cách hiệu quả.</p>
-                                <a class="btn btn-primary btn-lg" href="/client/get-bank-transactions">Bắt đầu ngay</a>
+                                <a class="btn btn-primary btn-lg" href="/client">Bắt đầu ngay</a>
                             </div>
                         </div>
                     </div>
