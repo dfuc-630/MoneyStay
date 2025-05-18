@@ -34,8 +34,8 @@
                             <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                                 <!-- <li class="nav-item"><a class="nav-link" href="#!">About</a></li> -->
                                 <li class="nav-item"><a class="nav-link" href="/contact">More About Us</a></li>
-                                <li class="nav-item"><a class="nav-link" href="#!">Login</a></li>
-                                <li class="nav-item"><a class="nav-link" href="#!">Sign Up</a></li>
+                                <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
+                                <li class="nav-item"><a class="nav-link" href="/register">Sign Up</a></li>
                             </ul>
                         </div>
                     </div>
@@ -48,7 +48,7 @@
                                 <h1 class="display-5 fw-bold">MoneyStay !</h1>
                                 <p class="fs-4">MoneyStay là một nền tảng quản lý tài chính cá nhân được thiết kế giúp
                                     bạn kiểm soát thu nhập, chi tiêu và tiết kiệm một cách hiệu quả.</p>
-                                <a class="btn btn-primary btn-lg" href="/client">Bắt đầu ngay</a>
+                                <a class="btn btn-primary btn-lg" href="/crawl_data">Bắt đầu ngay</a>
                             </div>
                         </div>
                     </div>

@@ -18,15 +18,25 @@ import org.openqa.selenium.logging.LoggingPreferences;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.example.LaptopShop.domain.Transactions;
+import com.example.LaptopShop.repository.TransactionsRepository;
+
 @Service
 public class BankTransactionService {
     private WebDriver browser;
+    private final TransactionService transactionService;
+    private final TransactionsRepository transactionsRepository;
 
-    public BankTransactionService() {
+    public BankTransactionService(TransactionService transactionService,
+            TransactionsRepository transactionsRepository) {
+        this.transactionService = transactionService;
+        this.transactionsRepository = transactionsRepository;
         // Cấu hình Logging Preferences
         LoggingPreferences logPrefs = new LoggingPreferences();
         logPrefs.enable(LogType.PERFORMANCE, Level.ALL);
@@ -39,9 +49,9 @@ public class BankTransactionService {
         browser = new ChromeDriver(options);
     }
 
-    public List<Map<String, String>> getBankTransactions() {
+    public void getBankTransactions() throws InterruptedException {
         browser.get("https://neo.vpbank.com.vn/main.html#/Signin");
-
+        Thread.sleep(3000);
         // Nhập thông tin đăng nhập
         WebElement usernameInput = findElementWithTimeout(browser, By.id("__input0-inner"), 30);
         WebElement passwordInput = findElementWithTimeout(browser, By.id("__input1-inner"), 30);
@@ -61,7 +71,7 @@ public class BankTransactionService {
             // return "error";
         }
         loginButton.click();
-
+        Thread.sleep(3000);
         // Tìm và click nút tra cứu giao dịch
         WebDriverWait wait = new WebDriverWait(browser, Duration.ofSeconds(100));
         WebElement transactionHistoryButton = wait.until(ExpectedConditions.presenceOfElementLocated(
@@ -71,9 +81,9 @@ public class BankTransactionService {
             // return "error";
         }
         transactionHistoryButton.click();
-
+        Thread.sleep(3000);
         // Lấy dữ liệu giao dịch
-        List<Map<String, String>> transactions = getDataTransactions(browser);
+        getDataTransactions(browser);
         // if (transactions == null || transactions.isEmpty()) {
         // redirectAttributes.addFlashAttribute("error", "Không tìm thấy dữ liệu giao
         // dịch.");
@@ -82,7 +92,7 @@ public class BankTransactionService {
 
         // redirectAttributes.addFlashAttribute("transactions", transactions);
         // System.out.println(transactions);
-        return transactions;
+        // return transactions;
     }
 
     private WebElement findElementWithTimeout(WebDriver browser, By by, int timeoutInSeconds) {
@@ -94,7 +104,7 @@ public class BankTransactionService {
         }
     }
 
-    private List<Map<String, String>> getDataTransactions(WebDriver browser) {
+    private void getDataTransactions(WebDriver browser) {
         try {
             WebDriverWait wait = new WebDriverWait(browser, Duration.ofSeconds(60));
             WebElement transactionTable = wait.until(ExpectedConditions.presenceOfElementLocated(
@@ -103,28 +113,26 @@ public class BankTransactionService {
             List<WebElement> rows = transactionTable.findElements(By.tagName("tr"));
             if (rows.size() < 1) {
                 System.err.println("Không tìm thấy dữ liệu giao dịch.");
-                return null;
+                return;
             }
-
-            List<Map<String, String>> transactions = new ArrayList<>();
             for (int i = 1; i < rows.size(); i++) { // Bỏ qua hàng tiêu đề
                 List<WebElement> cells = rows.get(i).findElements(By.tagName("td"));
-                Map<String, String> transaction = new HashMap<>();
-                transaction.put("transaction_date", cells.get(1).getText());
-                transaction.put("effective_date", cells.get(2).getText());
-                transaction.put("description", cells.get(3).getText());
-                transaction.put("transaction_code", cells.get(4).getText());
-                transaction.put("debit", cells.get(5).getText().strip());
-                transaction.put("credit", cells.get(6).getText().strip());
-                transaction.put("balance", cells.get(7).getText().strip());
-                transactions.add(transaction);
+                Transactions transaction = new Transactions();
+                transaction.setTransactiondate(cells.get(1).getText());
+                transaction.setEffectivedate(cells.get(2).getText());
+                transaction.setDescription(cells.get(3).getText());
+                transaction.setTransactioncode(cells.get(4).getText());
+                transaction.setDebit(cells.get(5).getText().strip());
+                transaction.setCredit(cells.get(6).getText().strip());
+                transaction.setBalance(cells.get(7).getText().strip());
+                transactionsRepository.save(transaction);
             }
 
-            return transactions;
+            return;
         } catch (Exception e) {
             System.err.println("Lỗi khi lấy dữ liệu giao dịch: " + e.getMessage());
         }
-        return null;
+        return;
     }
 
     private String getTokenFromLogs(WebDriver browser, String tokenKey) {

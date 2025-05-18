@@ -29,8 +29,8 @@
                             <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                                 <!-- <li class="nav-item"><a class="nav-link" href="#!">About</a></li> -->
                                 <li class="nav-item"><a class="nav-link" href="/contact">More About Us</a></li>
-                                <li class="nav-item"><a class="nav-link" href="#!">Login</a></li>
-                                <li class="nav-item"><a class="nav-link" href="#!">Sign Up</a></li>
+                                <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
+                                <li class="nav-item"><a class="nav-link" href="/register">Sign Up</a></li>
                             </ul>
                         </div>
                     </div>

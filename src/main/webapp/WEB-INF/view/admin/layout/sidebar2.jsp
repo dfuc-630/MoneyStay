@@ -18,11 +18,14 @@
                             <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
                             Expense
                         </a>
-                        <a class="nav-link" href="/client/debt">
+                        <a class="nav-link" href="/client/transaction">
                             <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
-                            Debt
+                            Transaction
                         </a>
-
+                        <a class="nav-link" href="/client/budget">
+                            <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
+                            Budget
+                        </a>
                     </div>
                 </div>
                 <div class="sb-sidenav-footer">

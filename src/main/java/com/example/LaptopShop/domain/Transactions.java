@@ -2,69 +2,57 @@ package com.example.LaptopShop.domain;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "transactions")
 public class Transactions {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "sender_id", nullable = false)
-    private Long senderId;
+    private String transactiondate;
 
-    @Column(name = "sender_name", nullable = false, length = 100)
-    private String senderName;
+    private String effectivedate;
 
-    @Column(name = "sender_account", nullable = false, length = 20)
-    private String senderAccount;
+    private String description;
 
-    @Column(name = "sender_bank", nullable = false, length = 100)
-    private String senderBank;
+    private String transactioncode;
 
-    @Column(name = "receiver_id", nullable = false)
-    private Long receiverId;
+    private String debit;
+    private String credit;
+    private String balance;
 
-    @Column(name = "receiver_name", nullable = false, length = 100)
-    private String receiverName;
+    @ManyToOne
+    @JoinColumn(name = "category_id") // đây là cột foreign key trong bảng transactions
+    private Categories category;
 
-    @Column(name = "receiver_account", nullable = false, length = 20)
-    private String receiverAccount;
-
-    @Column(name = "receiver_bank", nullable = false, length = 100)
-    private String receiverBank;
-
-    @Column(nullable = false)
-    private BigDecimal amount;
-
-    @Column(name = "transaction_type", nullable = false, length = 10)
-    private String transactionType; // "SEND" hoặc "RECEIVE"
-
-    @Column(name = "timestamp", nullable = false)
-    private LocalDateTime timestamp;
-
-    // Constructors
+    // Default constructor
     public Transactions() {
     }
 
-    public Transactions(Long senderId, String senderName, String senderAccount, String senderBank,
-            Long receiverId, String receiverName, String receiverAccount, String receiverBank,
-            BigDecimal amount, String transactionType) {
-        this.senderId = senderId;
-        this.senderName = senderName;
-        this.senderAccount = senderAccount;
-        this.senderBank = senderBank;
-        this.receiverId = receiverId;
-        this.receiverName = receiverName;
-        this.receiverAccount = receiverAccount;
-        this.receiverBank = receiverBank;
-        this.amount = amount;
-        this.transactionType = transactionType;
-        this.timestamp = LocalDateTime.now();
+    // Parameterized constructor
+    public Transactions(String transactiondate, String effectivedate, String description,
+            String transactioncode, String debit, String credit, String balance) {
+        this.transactiondate = transactiondate;
+        this.effectivedate = effectivedate;
+        this.description = description;
+        this.transactioncode = transactioncode;
+        this.debit = debit;
+        this.credit = credit;
+        this.balance = balance;
     }
 
-    // Getters & Setters
+    // Getters and Setters
+    public Categories getCategory() {
+        return category;
+    }
+
+    public void setCategory(Categories category) {
+        this.category = category;
+    }
+
     public Long getId() {
         return id;
     }
@@ -73,91 +61,59 @@ public class Transactions {
         this.id = id;
     }
 
-    public Long getSenderId() {
-        return senderId;
+    public String getTransactiondate() {
+        return transactiondate;
     }
 
-    public void setSenderId(Long senderId) {
-        this.senderId = senderId;
+    public void setTransactiondate(String transactiondate) {
+        this.transactiondate = transactiondate;
     }
 
-    public String getSenderName() {
-        return senderName;
+    public String getEffectivedate() {
+        return effectivedate;
     }
 
-    public void setSenderName(String senderName) {
-        this.senderName = senderName;
+    public void setEffectivedate(String effectivedate) {
+        this.effectivedate = effectivedate;
     }
 
-    public String getSenderAccount() {
-        return senderAccount;
+    public String getDescription() {
+        return description;
     }
 
-    public void setSenderAccount(String senderAccount) {
-        this.senderAccount = senderAccount;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
-    public String getSenderBank() {
-        return senderBank;
+    public String getTransactioncode() {
+        return transactioncode;
     }
 
-    public void setSenderBank(String senderBank) {
-        this.senderBank = senderBank;
+    public void setTransactioncode(String transactioncode) {
+        this.transactioncode = transactioncode;
     }
 
-    public Long getReceiverId() {
-        return receiverId;
+    public String getDebit() {
+        return debit;
     }
 
-    public void setReceiverId(Long receiverId) {
-        this.receiverId = receiverId;
+    public void setDebit(String debit) {
+        this.debit = debit;
     }
 
-    public String getReceiverName() {
-        return receiverName;
+    public String getCredit() {
+        return credit;
     }
 
-    public void setReceiverName(String receiverName) {
-        this.receiverName = receiverName;
+    public void setCredit(String credit) {
+        this.credit = credit;
     }
 
-    public String getReceiverAccount() {
-        return receiverAccount;
+    public String getBalance() {
+        return balance;
     }
 
-    public void setReceiverAccount(String receiverAccount) {
-        this.receiverAccount = receiverAccount;
-    }
-
-    public String getReceiverBank() {
-        return receiverBank;
-    }
-
-    public void setReceiverBank(String receiverBank) {
-        this.receiverBank = receiverBank;
-    }
-
-    public BigDecimal getAmount() {
-        return amount;
-    }
-
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
-    }
-
-    public String getTransactionType() {
-        return transactionType;
-    }
-
-    public void setTransactionType(String transactionType) {
-        this.transactionType = transactionType;
-    }
-
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(LocalDateTime timestamp) {
-        this.timestamp = timestamp;
+    public void setBalance(String balance) {
+        this.balance = balance;
     }
 }
