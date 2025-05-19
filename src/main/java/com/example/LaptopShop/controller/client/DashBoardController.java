@@ -12,41 +12,34 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.LaptopShop.domain.Categories;
+import com.example.LaptopShop.domain.Income;
 import com.example.LaptopShop.domain.Transactions;
 import com.example.LaptopShop.repository.CategoryRepository;
+import com.example.LaptopShop.repository.IncomeRepository;
 import com.example.LaptopShop.repository.TransactionsRepository;
 
 @Controller
 public class DashBoardController {
     private final TransactionsRepository transactionsRepository;
     private final CategoryRepository categoriesRepository;
+    private final IncomeRepository incomeRepository;
 
-    public DashBoardController(TransactionsRepository transactionsRepository, CategoryRepository categoriesRepository) {
+    public DashBoardController(TransactionsRepository transactionsRepository, CategoryRepository categoriesRepository,
+            IncomeRepository incomeRepository) {
         this.transactionsRepository = transactionsRepository;
         this.categoriesRepository = categoriesRepository;
+        this.incomeRepository = incomeRepository;
     }
 
     @GetMapping("/client/income")
     public String getIncomePage(Model model) {
-        // List<Map<String, String>> transactions =
-        // this.transactionCacheService.getTransactions();
-        // // Kiểm tra nếu transactions chưa có dữ liệu
-        // if (transactions == null) {
-        // transactions = new ArrayList<>();
-        // }
+        List<Transactions> transactions = transactionsRepository.findAll();
+        model.addAttribute("incomeTransactions", transactions); // đổi tên để khớp view
 
-        // // Lọc các giao dịch có income (credit > 0)
-        // List<Map<String, String>> incomeTransactions = transactions.stream()
-        // .filter(t -> {
-        // String credit = t.get("credit");
-        // return credit != null && !credit.trim().isEmpty() && !credit.equals("0") &&
-        // !credit.equals("--");
-        // })
-        // .collect(Collectors.toList());
-
-        // // Đưa dữ liệu vào model để hiển thị trên JSP
-        // model.addAttribute("incomeTransactions", incomeTransactions);
+        List<Income> incomes = incomeRepository.findAll();
+        model.addAttribute("income", incomes);
         return "client/manage/income";
+
     }
 
     @GetMapping("/client/expense")

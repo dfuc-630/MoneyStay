@@ -28,6 +28,10 @@ public class Transactions {
     @JoinColumn(name = "category_id") // đây là cột foreign key trong bảng transactions
     private Categories category;
 
+    @ManyToOne
+    @JoinColumn(name = "income_id") // đây là cột foreign key trong bảng transactions
+    private Income income;
+
     // Default constructor
     public Transactions() {
     }
@@ -115,5 +119,13 @@ public class Transactions {
 
     public void setBalance(String balance) {
         this.balance = balance;
+    }
+
+    public Income getIncome() {
+        return income;
+    }
+
+    public void setIncome(Income income) {
+        this.income = income;
     }
 }

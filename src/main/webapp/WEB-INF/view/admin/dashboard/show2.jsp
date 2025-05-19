@@ -102,20 +102,10 @@
                                                 <th>Số tiền nợ</th>
                                                 <th>Số tiền có</th>
                                                 <th>Số dư</th>
-                                                <th>Thể loại</th>
+                                                <th>Loại ra</th>
+                                                <th>Loại vào</th>
                                             </tr>
                                         </thead>
-                                        <tfoot>
-                                            <tr>
-                                                <th>Ngày giao dịch</th>
-                                                <th>Ngày hiệu lực</th>
-                                                <th>Mô tả</th>
-                                                <th>Mã giao dịch</th>
-                                                <th>Số tiền nợ</th>
-                                                <th>Số tiền có</th>
-                                                <th>Số dư</th>
-                                            </tr>
-                                        </tfoot>
                                         <tbody>
                                             <c:forEach var="transaction" items="${transactions}">
                                                 <tr>
@@ -156,9 +146,39 @@
                                                                     </option>
                                                                 </c:forEach>
                                                             </select>
-
                                                         </form>
-
+                                                    </td>
+                                                    <td>
+                                                        <form method="post" action="/updateTransactionIncome">
+                                                            <input type="hidden" name="${_csrf.parameterName}"
+                                                                value="${_csrf.token}" />
+                                                            <input type="hidden" name="id" value="${transaction.id}" />
+                                                            <input type="hidden" name="transactiondate"
+                                                                value="${transaction.transactiondate}" />
+                                                            <input type="hidden" name="effectivedate"
+                                                                value="${transaction.effectivedate}" />
+                                                            <input type="hidden" name="description"
+                                                                value="${transaction.description}" />
+                                                            <input type="hidden" name="transactioncode"
+                                                                value="${transaction.transactioncode}" />
+                                                            <input type="hidden" name="debit"
+                                                                value="${transaction.debit}" />
+                                                            <input type="hidden" name="credit"
+                                                                value="${transaction.credit}" />
+                                                            <input type="hidden" name="balance"
+                                                                value="${transaction.balance}" />
+                                                            <select name="income.id" onchange="this.form.submit()">
+                                                                <option value="">-- Lựa chọn --</option>
+                                                                <c:forEach var="cat" items="${incomes}">
+                                                                    <option value="${cat.id}" <c:if
+                                                                        test="${transaction.income != null && transaction.income.id.longValue() == cat.id}">
+                                                                        selected
+                                                                        </c:if>>
+                                                                        ${cat.name}
+                                                                    </option>
+                                                                </c:forEach>
+                                                            </select>
+                                                        </form>
                                                     </td>
                                                 </tr>
                                             </c:forEach>

@@ -222,13 +222,14 @@
                                     <!-- Sorting options -->
                                     <div class="mb-3">
                                         <div class="btn-group">
-                                            <!-- <button class="btn btn-outline-secondary sorting-btn" data-sort="date-asc">
-                                                <i class="fas fa-sort-amount-up-alt"></i> Ngày (Cũ nhất)
-                                            </button>
                                             <button class="btn btn-outline-secondary sorting-btn active"
                                                 data-sort="date-desc">
                                                 <i class="fas fa-sort-amount-down"></i> Ngày (Mới nhất)
-                                            </button> -->
+                                            </button>
+                                            <button class="btn btn-outline-secondary sorting-btn" data-sort="date-asc">
+                                                <i class="fas fa-sort-amount-up-alt"></i> Ngày (Cũ nhất)
+                                            </button>
+
                                             <button class="btn btn-outline-secondary sorting-btn"
                                                 data-sort="amount-asc">
                                                 <i class="fas fa-sort-amount-up-alt"></i> Số tiền (Thấp đến cao)

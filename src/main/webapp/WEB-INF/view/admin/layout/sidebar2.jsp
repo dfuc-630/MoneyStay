@@ -18,10 +18,10 @@
                             <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
                             Expense
                         </a>
-                        <a class="nav-link" href="/client/transaction">
+                        <!-- <a class="nav-link" href="/client/transaction">
                             <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
                             Transaction
-                        </a>
+                        </a> -->
                         <a class="nav-link" href="/client/budget">
                             <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
                             Budget
