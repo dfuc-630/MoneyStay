@@ -23,19 +23,22 @@ public class Budget {
     @JoinColumn(name = "category_id")
     private Categories category;
 
-    private LocalDateTime startDate;
-    private LocalDateTime endDate;
+    @ManyToOne
+    @JoinColumn(name = "income")
+    private Income income;
 
-    public Budget(Long id, Double limitAmount, Categories category, LocalDateTime startDate, LocalDateTime endDate) {
-        this.id = id;
-        this.limitAmount = limitAmount;
-        this.category = category;
-        this.startDate = startDate;
-        this.endDate = endDate;
-    }
+    // private LocalDateTime startDate;
+    // private LocalDateTime endDate;
 
     public Long getId() {
         return id;
+    }
+
+    public Budget(Long id, Double limitAmount, Categories category, Income income) {
+        this.id = id;
+        this.limitAmount = limitAmount;
+        this.category = category;
+        this.income = income;
     }
 
     public void setId(Long id) {
@@ -58,20 +61,28 @@ public class Budget {
         this.category = category;
     }
 
-    public LocalDateTime getStartDate() {
-        return startDate;
+    // public LocalDateTime getStartDate() {
+    // return startDate;
+    // }
+
+    // public void setStartDate(LocalDateTime startDate) {
+    // this.startDate = startDate;
+    // }
+
+    // public LocalDateTime getEndDate() {
+    // return endDate;
+    // }
+
+    // public void setEndDate(LocalDateTime endDate) {
+    // this.endDate = endDate;
+    // }
+
+    public Income getIncome() {
+        return income;
     }
 
-    public void setStartDate(LocalDateTime startDate) {
-        this.startDate = startDate;
-    }
-
-    public LocalDateTime getEndDate() {
-        return endDate;
-    }
-
-    public void setEndDate(LocalDateTime endDate) {
-        this.endDate = endDate;
+    public void setIncome(Income income) {
+        this.income = income;
     }
 
     // Constructors, getters, setters
