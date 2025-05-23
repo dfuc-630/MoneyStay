@@ -82,6 +82,39 @@ public class BankTransactionService {
         }
         transactionHistoryButton.click();
         Thread.sleep(3000);
+
+        WebElement filterButton = findElementWithTimeout(browser, By.id("accountDetails--filterButton-img"), 20);
+        if (filterButton != null) {
+            filterButton.click();
+            System.out.println("Đã nhấn nút bộ lọc.");
+            Thread.sleep(1000);
+        } else {
+            System.out.println("Không tìm thấy nút bộ lọc.");
+            return;
+        }
+
+        WebElement filter90Days = findElementWithTimeout(browser, By.id("__item17-content"), 10);
+        if (filter90Days != null) {
+            filter90Days.click();
+            System.out.println("Đã chọn '90 ngày qua'.");
+            Thread.sleep(1000);
+        } else {
+            System.out.println("Không tìm thấy mục '90 ngày qua'.");
+            return;
+        }
+
+        WebElement viewButton = findElementWithTimeout(browser, By.id("__button6-content"), 10);
+        if (viewButton != null) {
+            viewButton.click();
+            System.out.println("Đã nhấn nút 'Xem'.");
+            Thread.sleep(3000);
+        } else {
+            System.out.println("Không tìm thấy nút 'Xem'.");
+            return;
+        }
+
+        Thread.sleep(3000);
+
         // Lấy dữ liệu giao dịch
         getDataTransactions(browser);
         // if (transactions == null || transactions.isEmpty()) {

@@ -26,7 +26,7 @@ public class HomePageController {
 
     @GetMapping("/")
     public String getHomePage() {
-        return "client/homepage/show";
+        return "guess/homepage/show";
     }
 
     @GetMapping("/contact")
