@@ -20,6 +20,7 @@ import com.example.LaptopShop.domain.BudgetTarget;
 import com.example.LaptopShop.domain.Categories;
 import com.example.LaptopShop.domain.Income;
 import com.example.LaptopShop.domain.Transactions;
+import com.example.LaptopShop.domain.User;
 import com.example.LaptopShop.repository.BudgetTargetRepository;
 import com.example.LaptopShop.repository.CategoryRepository;
 import com.example.LaptopShop.repository.IncomeRepository;
@@ -154,6 +155,53 @@ public class DashBoardController {
         model.addAttribute("totalCreditThisMonth", totalCreditThisMonth);
         model.addAttribute("totalDebitThisMonth", totalDebitThisMonth);
         return "client/manage/budgetview"; // JSP mới để hiển thị thông tin chi tiết
+    }
+
+    @GetMapping("/client/budget/edit/{id}")
+    public String getUpdatePage(@PathVariable Long id, Model model) {
+        BudgetTarget budget = budgetTargetRepository.getById(id);
+        model.addAttribute("newBudget", budget);
+
+        List<Categories> categories = categoriesRepository.findAll();
+        List<Income> incomes = incomeRepository.findAll();
+        model.addAttribute("outcomeCategories", categories);
+        model.addAttribute("incomeList", incomes);
+        return "client/manage/budgetupdate";
+    }
+
+    @PostMapping("/client/budget/edit")
+    public String postUpdateBudget(Model model, @ModelAttribute("newBudget") BudgetTarget doanphuc) {
+        BudgetTarget budget = this.budgetTargetRepository.getById(doanphuc.getId());
+        // model.addAttribute("newUser", user);
+        if (budget != null) {
+            budget.setName(doanphuc.getName());
+            budget.setAmount(doanphuc.getAmount());
+
+            if (doanphuc.getCategory() != null && doanphuc.getCategory().getId() != null) {
+                Categories category = categoriesRepository.findById(doanphuc.getCategory().getId()).orElse(null);
+                if (category != null) {
+                    budget.setCategory(category); // gán category từ DB
+                } else {
+                    budget.setCategory(null); // tránh gán category không tồn tại
+                }
+            } else {
+                budget.setCategory(null); // gán null nếu không chọn
+            }
+
+            if (doanphuc.getIncome() != null && doanphuc.getIncome().getId() != null) {
+                Income income = incomeRepository.findById(doanphuc.getIncome().getId()).orElse(null);
+                if (income != null) {
+                    budget.setIncome(income);
+                } else {
+                    budget.setIncome(null);
+                }
+            } else {
+                budget.setIncome(null);
+            }
+
+            this.budgetTargetRepository.save(budget);
+        }
+        return "redirect:/client/budget";
     }
 
 }
