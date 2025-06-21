@@ -13,6 +13,8 @@
                     <meta name="author" content="" />
                     <title>Income Transactions</title>
                     <link href="/css/styles.css" rel="stylesheet" />
+                    <!-- Add Chart.js CDN -->
+                    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
                     <style>
                         /* Color definitions for both buttons and table cells */
@@ -46,7 +48,6 @@
                             font-weight: bold;
                         }
 
-
                         /* Button styles when active */
                         .category-btn.active,
                         .time-filter-btn.active,
@@ -77,7 +78,6 @@
                             border-color: #E91E63 !important;
                         }
 
-
                         /* Summary box styling */
                         .summary-box {
                             background-color: #f8f9fa;
@@ -101,6 +101,12 @@
                         /* Date range selector */
                         .date-range-selector {
                             margin-bottom: 15px;
+                        }
+
+                        /* Chart container styling */
+                        .chart-container {
+                            max-width: 600px;
+                            margin: 20px auto;
                         }
                     </style>
 
@@ -183,7 +189,6 @@
                                         <button
                                             class="btn btn-outline-secondary m-1 category-btn btn-uncategorized-income"
                                             data-category="Uncategorized Income">Uncategorized Income</button>
-
                                     </div>
 
                                     <!-- Sorting options -->
@@ -203,6 +208,20 @@
                                                 data-sort="amount-desc">
                                                 <i class="fas fa-sort-amount-down"></i> Số tiền (Cao đến thấp)
                                             </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Charts section -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-4">
+                                            <div class="chart-container">
+                                                <canvas id="categoryPieChart"></canvas>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <div class="chart-container">
+                                                <canvas id="incomeTrendChart"></canvas>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -238,8 +257,7 @@
                                                         <td class="text-end">${transaction.balance}</td>
                                                         <td class="category-cell"
                                                             data-group="${transaction.income.groupName}">
-                                                            ${transaction.income.name}
-                                                        </td>
+                                                            ${transaction.income.name}</td>
                                                     </tr>
                                                 </c:forEach>
                                             </tbody>
@@ -247,14 +265,26 @@
                                     </div>
                                 </div>
                             </main>
-
                             <jsp:include page="../../admin/layout/footer2.jsp" />
                         </div>
                     </div>
 
-                    <!-- Script for filtering and sorting transactions -->
+                    <!-- Script for filtering, sorting, and chart rendering -->
                     <script>
                         $(document).ready(function () {
+                            // Chart.js objects
+                            let categoryPieChart = null;
+                            let incomeTrendChart = null;
+
+                            // Category colors for consistency
+                            const categoryColors = {
+                                "Salary": "#4CAF50",
+                                "Other Income": "#2196F3",
+                                "Transferred In": "#9C27B0",
+                                "Interest": "#FF9800",
+                                "Uncategorized Income": "#E91E63"
+                            };
+
                             // Apply colors to categories immediately
                             applyColorsToCategories();
 
@@ -268,67 +298,53 @@
                             $(".sorting-btn[data-sort='date-desc']").addClass("active");
                             sortTransactions("date-desc");
                             calculateTotals();
+                            updateCharts();
 
                             // Category filter functionality
                             $(".category-btn").click(function () {
-                                // Update active state
                                 $(".category-btn").removeClass("active");
                                 $(this).addClass("active");
-
-                                // Apply filters
                                 applyFilters();
                                 calculateTotals();
+                                updateCharts();
                             });
 
                             // Time filter functionality
                             $(".time-filter-btn").click(function () {
-                                // Update active state
                                 $(".time-filter-btn").removeClass("active");
                                 $(this).addClass("active");
-
-                                // Apply filters
                                 applyFilters();
                                 calculateTotals();
+                                updateCharts();
                             });
 
                             // Date range filter
                             $("#apply-date-filter").click(function () {
-                                // Clear time filter buttons active state
                                 $(".time-filter-btn").removeClass("active");
-
-                                // Apply filters
                                 applyFilters();
                                 calculateTotals();
+                                updateCharts();
                             });
 
                             // Sorting functionality
                             $(".sorting-btn").click(function () {
-                                // Update active state
                                 $(".sorting-btn").removeClass("active");
                                 $(this).addClass("active");
-
-                                // Apply sorting
                                 sortTransactions($(this).data("sort"));
                             });
 
                             // Function to ensure each row has correct data attributes
                             function prepareRowData() {
                                 $(".transaction-row").each(function () {
-                                    // Get date from first cell if not set
                                     if (!$(this).data("date")) {
                                         const dateText = $(this).find("td:first").text().trim();
                                         $(this).attr("data-date", dateText);
                                     }
-
-                                    // Get amount from credit column (6th column) if not set
                                     if (!$(this).data("amount")) {
                                         const amountText = $(this).find("td:eq(5)").text().trim();
-                                        let cleanAmount = amountText.replace(/[^\d,.]/g, '');
-                                        cleanAmount = cleanAmount.replace(/,/g, '');
+                                        let cleanAmount = amountText.replace(/[^\d,.]/g, '').replace(/,/g, '');
                                         $(this).attr("data-amount", cleanAmount);
                                     }
-
-                                    // Get category from category cell if not set
                                     if (!$(this).data("category")) {
                                         const groupName = $(this).find(".category-cell").data("group");
                                         if (groupName) {
@@ -342,77 +358,53 @@
                             function setDefaultDates() {
                                 const today = new Date();
                                 const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-                                // Format dates as YYYY-MM-DD
                                 const formatDate = (date) => {
                                     const year = date.getFullYear();
                                     const month = String(date.getMonth() + 1).padStart(2, '0');
                                     const day = String(date.getDate()).padStart(2, '0');
                                     return `${year}-${month}-${day}`;
                                 };
-
                                 $("#start-date").val(formatDate(startOfMonth));
                                 $("#end-date").val(formatDate(today));
                             }
 
-                            // Function to parse dates correctly
+                            // Function to parse dates
                             function parseTransactionDate(dateStr) {
-                                // Check the format of dateStr and parse accordingly
                                 if (!dateStr) return null;
-
-                                // Handle DD/MM/YYYY HH:MM:SS format
                                 if (dateStr.includes('/') && dateStr.includes(':')) {
-                                    // Extract just the date part DD/MM/YYYY
                                     const datePart = dateStr.split(' ')[0];
                                     const parts = datePart.split('/');
-
                                     if (parts.length === 3) {
-                                        // Format is DD/MM/YYYY
                                         const day = parseInt(parts[0]);
-                                        const month = parseInt(parts[1]) - 1; // Months are 0-indexed in JS
+                                        const month = parseInt(parts[1]) - 1;
                                         const year = parseInt(parts[2]);
-
-                                        const date = new Date(year, month, day);
-                                        return date;
+                                        return new Date(year, month, day);
                                     }
-                                }
-                                // Handle DD/MM/YYYY format without time
-                                else if (dateStr.includes('/')) {
+                                } else if (dateStr.includes('/')) {
                                     const parts = dateStr.split('/');
                                     if (parts.length === 3) {
-                                        // Format is DD/MM/YYYY
                                         const day = parseInt(parts[0]);
-                                        const month = parseInt(parts[1]) - 1; // Months are 0-indexed in JS
+                                        const month = parseInt(parts[1]) - 1;
                                         const year = parseInt(parts[2]);
-
-                                        const date = new Date(year, month, day);
-                                        return date;
+                                        return new Date(year, month, day);
                                     }
+                                } else if (dateStr.includes('-')) {
+                                    return new Date(dateStr);
                                 }
-                                // Check if format is YYYY-MM-DD
-                                else if (dateStr.includes('-')) {
-                                    const date = new Date(dateStr);
-                                    return date;
-                                }
-
-                                // Try standard parsing as fallback
                                 const date = new Date(dateStr);
                                 if (!isNaN(date.getTime())) {
                                     return date;
                                 }
-
                                 console.error("Failed to parse date:", dateStr);
                                 return null;
                             }
 
-                            // Function to apply all filters (category and time)
+                            // Function to apply all filters
                             function applyFilters() {
                                 const selectedCategory = $(".category-btn.active").data("category") || "all";
                                 const selectedTimeFilter = $(".time-filter-btn.active").data("timefilter") || "all";
                                 const startDate = $("#start-date").val() ? new Date($("#start-date").val()) : null;
                                 const endDate = $("#end-date").val() ? new Date($("#end-date").val()) : null;
-
-                                // Set end date to end of day
                                 if (endDate) {
                                     endDate.setHours(23, 59, 59, 999);
                                 }
@@ -430,20 +422,13 @@
                                     let showByCategory = (selectedCategory === "all" || rowCategory === selectedCategory);
                                     let showByTime = true;
 
-                                    // Apply time filter
                                     if (selectedTimeFilter && selectedTimeFilter !== "all") {
                                         const today = new Date();
-                                        const currentDay = today.getDay(); // 0 = Sunday, 6 = Saturday
-
-                                        // Calculate start of week (Sunday)
+                                        const currentDay = today.getDay();
                                         const startOfWeek = new Date(today);
                                         startOfWeek.setDate(today.getDate() - currentDay);
                                         startOfWeek.setHours(0, 0, 0, 0);
-
-                                        // Calculate start of month
                                         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-                                        // Calculate start of last month
                                         const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
                                         const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
 
@@ -455,11 +440,9 @@
                                             showByTime = rowDate >= startOfLastMonth && rowDate <= endOfLastMonth;
                                         }
                                     } else if (startDate && endDate) {
-                                        // Apply custom date range
                                         showByTime = rowDate >= startDate && rowDate <= endDate;
                                     }
 
-                                    // Show/hide based on combined filters
                                     if (showByCategory && showByTime) {
                                         $(this).show();
                                     } else {
@@ -477,7 +460,6 @@
                                     if (sortType === "date-asc" || sortType === "date-desc") {
                                         const dateAStr = $(a).data("date");
                                         const dateBStr = $(b).data("date");
-
                                         const dateA = parseTransactionDate(dateAStr);
                                         const dateB = parseTransactionDate(dateBStr);
 
@@ -485,31 +467,20 @@
                                         if (!dateA) return 1;
                                         if (!dateB) return -1;
 
-                                        return sortType === "date-asc" ?
-                                            dateA.getTime() - dateB.getTime() :
-                                            dateB.getTime() - dateA.getTime();
+                                        return sortType === "date-asc" ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
                                     } else {
-                                        // For amount sorting, extract and parse the amounts
                                         let amountAText = $(a).data("amount") || "0";
                                         let amountBText = $(b).data("amount") || "0";
-
                                         if (typeof amountAText !== 'string') amountAText = String(amountAText);
                                         if (typeof amountBText !== 'string') amountBText = String(amountBText);
-
-                                        // Clean up the amounts (remove currency symbols, commas)
                                         let cleanAmountA = amountAText.replace(/[^\d,.]/g, '').replace(/,/g, '');
                                         let cleanAmountB = amountBText.replace(/[^\d,.]/g, '').replace(/,/g, '');
-
                                         const amountA = parseFloat(cleanAmountA) || 0;
                                         const amountB = parseFloat(cleanAmountB) || 0;
-
-                                        return sortType === "amount-asc" ?
-                                            amountA - amountB :
-                                            amountB - amountA;
+                                        return sortType === "amount-asc" ? amountA - amountB : amountB - amountA;
                                     }
                                 });
 
-                                // Re-append sorted rows
                                 $.each(rows, function (index, row) {
                                     tbody.append(row);
                                 });
@@ -524,37 +495,25 @@
                                 const today = new Date();
                                 const currentMonth = today.getMonth();
                                 const currentYear = today.getFullYear();
-
-                                // Calculate start of week (Sunday)
                                 const currentDay = today.getDay();
                                 const startOfWeek = new Date(today);
                                 startOfWeek.setDate(today.getDate() - currentDay);
                                 startOfWeek.setHours(0, 0, 0, 0);
-
-                                // Calculate start and end of current month
                                 const startOfMonth = new Date(currentYear, currentMonth, 1);
                                 const endOfMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59, 999);
 
                                 $(".transaction-row:visible").each(function () {
-                                    // Parse amount correctly - handle VND format with commas
                                     let amountText = $(this).data("amount") || "";
                                     if (typeof amountText !== 'string') {
                                         amountText = String(amountText);
                                     }
-
-                                    // Extract just the number part from formats like "18,000 VND"
-                                    let cleanAmount = amountText.replace(/[^\d,.]/g, '');
-                                    // Replace commas with empty string (for thousand separators)
-                                    cleanAmount = cleanAmount.replace(/,/g, '');
-
+                                    let cleanAmount = amountText.replace(/[^\d,.]/g, '').replace(/,/g, '');
                                     let amount = parseFloat(cleanAmount) || 0;
 
-                                    // Get amount from the credit column as backup
                                     if (amount === 0) {
-                                        const creditText = $(this).find("td:eq(5)").text().trim(); // 6th column (0-indexed)
+                                        const creditText = $(this).find("td:eq(5)").text().trim();
                                         if (creditText) {
-                                            let creditAmount = creditText.replace(/[^\d,.]/g, '');
-                                            creditAmount = creditAmount.replace(/,/g, '');
+                                            let creditAmount = creditText.replace(/[^\d,.]/g, '').replace(/,/g, '');
                                             const parsedCredit = parseFloat(creditAmount) || 0;
                                             if (parsedCredit > 0) {
                                                 amount = parsedCredit;
@@ -562,43 +521,31 @@
                                         }
                                     }
 
-                                    // Parse date
                                     const rowDateStr = $(this).data("date");
                                     let rowDate = parseTransactionDate(rowDateStr);
-
                                     if (!rowDate) {
-                                        // Try to get date from first column as backup
                                         const dateCell = $(this).find("td:first").text().trim();
                                         const backupDate = parseTransactionDate(dateCell);
-
                                         if (!backupDate) {
                                             console.error("Could not parse date for row:", $(this));
                                             return;
                                         }
-
                                         rowDate = backupDate;
                                     }
 
-                                    // Add to current total (all visible transactions)
                                     currentTotal += amount;
-
-                                    // Check if transaction is in current month
                                     if (rowDate >= startOfMonth && rowDate <= endOfMonth) {
                                         monthlyTotal += amount;
                                     }
-
-                                    // Check if transaction is in current week
                                     if (rowDate >= startOfWeek && rowDate <= today) {
                                         weeklyTotal += amount;
                                     }
                                 });
 
-                                // Format numbers with commas
                                 function formatNumber(num) {
                                     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                                 }
 
-                                // Update summary boxes
                                 $("#current-total").text(formatNumber(currentTotal.toFixed(0)) + " VND");
                                 $("#monthly-total").text(formatNumber(monthlyTotal.toFixed(0)) + " VND");
                                 $("#weekly-total").text(formatNumber(weeklyTotal.toFixed(0)) + " VND");
@@ -606,30 +553,135 @@
 
                             // Function to apply colors to categories
                             function applyColorsToCategories() {
-                                // First, apply colors to the category cells based on the group name
                                 $(".category-cell").each(function () {
                                     const groupName = $(this).data("group");
-
-                                    // Remove any existing color classes
                                     $(this).removeClass("cat-salary cat-other-income cat-transferred-in cat-interest cat-uncategorized-income");
-
-                                    // Apply the appropriate class based on groupName
                                     switch (groupName) {
-                                        case "Salary":
-                                            $(this).addClass("cat-salary");
-                                            break;
-                                        case "Other Income":
-                                            $(this).addClass("cat-other-income");
-                                            break;
-                                        case "Transferred In":
-                                            $(this).addClass("cat-transferred-in");
-                                            break;
-                                        case "Interest":
-                                            $(this).addClass("cat-interest");
-                                            break;
-                                        case "Uncategorized Income":
-                                            $(this).addClass("cat-uncategorized-income");
-                                            break;
+                                        case "Salary": $(this).addClass("cat-salary"); break;
+                                        case "Other Income": $(this).addClass("cat-other-income"); break;
+                                        case "Transferred In": $(this).addClass("cat-transferred-in"); break;
+                                        case "Interest": $(this).addClass("cat-interest"); break;
+                                        case "Uncategorized Income": $(this).addClass("cat-uncategorized-income"); break;
+                                    }
+                                });
+                            }
+
+                            // Function to update charts
+                            function updateCharts() {
+                                // Data for pie chart
+                                const categoryTotals = {
+                                    "Salary": 0,
+                                    "Other Income": 0,
+                                    "Transferred In": 0,
+                                    "Interest": 0,
+                                    "Uncategorized Income": 0
+                                };
+
+                                // Data for line chart (daily totals)
+                                const dailyTotals = {};
+                                const selectedTimeFilter = $(".time-filter-btn.active").data("timefilter") || "all";
+                                const startDate = $("#start-date").val() ? new Date($("#start-date").val()) : null;
+                                const endDate = $("#end-date").val() ? new Date($("#end-date").val()) : null;
+
+                                $(".transaction-row:visible").each(function () {
+                                    const category = $(this).data("category");
+                                    let amountText = $(this).data("amount") || "";
+                                    if (typeof amountText !== 'string') amountText = String(amountText);
+                                    let cleanAmount = amountText.replace(/[^\d,.]/g, '').replace(/,/g, '');
+                                    let amount = parseFloat(cleanAmount) || 0;
+
+                                    if (amount === 0) {
+                                        const creditText = $(this).find("td:eq(5)").text().trim();
+                                        if (creditText) {
+                                            let creditAmount = creditText.replace(/[^\d,.]/g, '').replace(/,/g, '');
+                                            amount = parseFloat(creditAmount) || 0;
+                                        }
+                                    }
+
+                                    if (category in categoryTotals) {
+                                        categoryTotals[category] += amount;
+                                    }
+
+                                    const rowDateStr = $(this).data("date");
+                                    const rowDate = parseTransactionDate(rowDateStr);
+                                    if (rowDate) {
+                                        const dateKey = rowDate.toISOString().split('T')[0]; // YYYY-MM-DD
+                                        dailyTotals[dateKey] = (dailyTotals[dateKey] || 0) + amount;
+                                    }
+                                });
+
+                                // Prepare pie chart data
+                                const pieData = {
+                                    labels: Object.keys(categoryTotals).filter(cat => categoryTotals[cat] > 0),
+                                    datasets: [{
+                                        data: Object.values(categoryTotals).filter(val => val > 0),
+                                        backgroundColor: Object.keys(categoryTotals).filter(cat => categoryTotals[cat] > 0).map(cat => categoryColors[cat])
+                                    }]
+                                };
+
+                                // Prepare line chart data
+                                const dates = Object.keys(dailyTotals).sort();
+                                const lineData = {
+                                    labels: dates,
+                                    datasets: [{
+                                        label: 'Income Over Time',
+                                        data: dates.map(date => dailyTotals[date]),
+                                        borderColor: '#4CAF50',
+                                        fill: false
+                                    }]
+                                };
+
+                                // Destroy existing charts if they exist
+                                if (categoryPieChart) {
+                                    categoryPieChart.destroy();
+                                }
+                                if (incomeTrendChart) {
+                                    incomeTrendChart.destroy();
+                                }
+
+                                // Create pie chart
+                                categoryPieChart = new Chart(document.getElementById('categoryPieChart'), {
+                                    type: 'pie',
+                                    data: pieData,
+                                    options: {
+                                        plugins: {
+                                            title: {
+                                                display: true,
+                                                text: 'Tỉ lệ thu nhập theo thể loại'
+                                            },
+                                            legend: {
+                                                position: 'bottom'
+                                            }
+                                        }
+                                    }
+                                });
+
+                                // Create line chart
+                                incomeTrendChart = new Chart(document.getElementById('incomeTrendChart'), {
+                                    type: 'line',
+                                    data: lineData,
+                                    options: {
+                                        plugins: {
+                                            title: {
+                                                display: true,
+                                                text: 'Xu hướng thu nhập theo thời gian'
+                                            }
+                                        },
+                                        scales: {
+                                            x: {
+                                                title: {
+                                                    display: true,
+                                                    text: 'Date'
+                                                }
+                                            },
+                                            y: {
+                                                title: {
+                                                    display: true,
+                                                    text: 'Amount (VND)'
+                                                },
+                                                beginAtZero: true
+                                            }
+                                        }
                                     }
                                 });
                             }

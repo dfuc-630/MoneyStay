@@ -11,8 +11,10 @@
                     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
                     <meta name="description" content="" />
                     <meta name="author" content="" />
-                    <title>Create User</title>
+                    <title>Expense Transactions</title>
                     <link href="/css/styles.css" rel="stylesheet" />
+                    <!-- Add Chart.js CDN -->
+                    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
                     <style>
                         /* Color definitions for both buttons and table cells */
@@ -120,19 +122,15 @@
                         .date-range-selector {
                             margin-bottom: 15px;
                         }
+
+                        /* Chart container styling */
+                        .chart-container {
+                            max-width: 600px;
+                            margin: 20px auto;
+                        }
                     </style>
 
                     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-                    <script>
-                        $(document).ready(() => {
-                            const avatarFile = $("#avatarFile");
-                            avatarFile.change(function (e) {
-                                const imgURL = URL.createObjectURL(e.target.files[0]);
-                                $("#avatarPreview").attr("src", imgURL);
-                                $("#avatarPreview").css({ "display": "block" });
-                            });
-                        });
-                    </script>
                     <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js"
                         crossorigin="anonymous"></script>
                 </head>
@@ -196,9 +194,9 @@
                                         </div>
                                     </div>
 
-                                    <!-- 1. Danh sách 7 mục chi tiêu -->
+                                    <!-- Expense category buttons -->
                                     <div class="mb-3 text-center">
-                                        <button class="btn btn-outline-primary m-1 category-btn"
+                                        <button class="btn btn-outline-primary m-1 category-btn active"
                                             data-category="all">All</button>
                                         <button
                                             class="btn btn-outline-secondary m-1 category-btn btn-essential-expenses"
@@ -229,7 +227,6 @@
                                             <button class="btn btn-outline-secondary sorting-btn" data-sort="date-asc">
                                                 <i class="fas fa-sort-amount-up-alt"></i> Ngày (Cũ nhất)
                                             </button>
-
                                             <button class="btn btn-outline-secondary sorting-btn"
                                                 data-sort="amount-asc">
                                                 <i class="fas fa-sort-amount-up-alt"></i> Số tiền (Thấp đến cao)
@@ -241,7 +238,21 @@
                                         </div>
                                     </div>
 
-                                    <!-- 2. Bảng giao dịch -->
+                                    <!-- Charts section -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-4">
+                                            <div class="chart-container">
+                                                <canvas id="categoryPieChart"></canvas>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <div class="chart-container">
+                                                <canvas id="expenseTrendChart"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expense transactions table -->
                                     <div class="table-responsive">
                                         <table class="table table-bordered table-hover">
                                             <thead>
@@ -271,9 +282,9 @@
                                                         </td>
                                                         <td>${transaction.credit}</td>
                                                         <td class="text-end">${transaction.balance}</td>
-                                                        <td id="category-cell-${transaction.id}">
-                                                            ${transaction.category.name}
-                                                        </td>
+                                                        <td class="category-cell"
+                                                            data-group="${transaction.category.groupName}">
+                                                            ${transaction.category.name}</td>
                                                     </tr>
                                                 </c:forEach>
                                             </tbody>
@@ -281,15 +292,28 @@
                                     </div>
                                 </div>
                             </main>
-
                             <jsp:include page="../../admin/layout/footer2.jsp" />
                         </div>
                     </div>
 
-                    <!-- Script for filtering and sorting transactions -->
+                    <!-- Script for filtering, sorting, and chart rendering -->
                     <script>
-
                         $(document).ready(function () {
+                            // Chart.js objects
+                            let categoryPieChart = null;
+                            let expenseTrendChart = null;
+
+                            // Category colors for consistency
+                            const categoryColors = {
+                                "Essential Expenses": "#d94f82",
+                                "Personal & Family": "#f0ad4e",
+                                "Personal Development": "#5bc0de",
+                                "Entertainment & Social": "#5cb85c",
+                                "Finance": "#337ab7",
+                                "Work / Business": "#9b59b6",
+                                "Others": "#6c757d"
+                            };
+
                             // Apply colors to categories immediately
                             applyColorsToCategories();
 
@@ -299,73 +323,70 @@
                             // Make sure rows have proper data attributes for filtering and sorting
                             prepareRowData();
 
-                            // Initialize with all transactions visible and correct sort
+                            // Initialize with all transactions visible and date-desc sort as default
+                            $(".sorting-btn[data-sort='date-desc']").addClass("active");
                             sortTransactions("date-desc");
                             calculateTotals();
+                            updateCharts();
 
                             // Category filter functionality
                             $(".category-btn").click(function () {
-                                // Update active state
                                 $(".category-btn").removeClass("active");
                                 $(this).addClass("active");
-
-                                // Apply filters
                                 applyFilters();
                                 calculateTotals();
+                                updateCharts();
                             });
 
                             // Time filter functionality
                             $(".time-filter-btn").click(function () {
-                                // Update active state
                                 $(".time-filter-btn").removeClass("active");
                                 $(this).addClass("active");
-
-                                // Apply filters
                                 applyFilters();
                                 calculateTotals();
+                                updateCharts();
                             });
 
                             // Date range filter
                             $("#apply-date-filter").click(function () {
-                                // Clear time filter buttons active state
                                 $(".time-filter-btn").removeClass("active");
-
-                                // Apply filters
                                 applyFilters();
                                 calculateTotals();
+                                updateCharts();
                             });
 
                             // Sorting functionality
                             $(".sorting-btn").click(function () {
-                                // Update active state
                                 $(".sorting-btn").removeClass("active");
                                 $(this).addClass("active");
-
-                                // Apply sorting
                                 sortTransactions($(this).data("sort"));
+                            });
+
+                            // Avatar file preview (existing functionality)
+                            const avatarFile = $("#avatarFile");
+                            avatarFile.change(function (e) {
+                                const imgURL = URL.createObjectURL(e.target.files[0]);
+                                $("#avatarPreview").attr("src", imgURL);
+                                $("#avatarPreview").css({ "display": "block" });
                             });
 
                             // Function to ensure each row has correct data attributes
                             function prepareRowData() {
                                 $(".transaction-row").each(function () {
-                                    // Get date from first cell if not set
                                     if (!$(this).data("date")) {
                                         const dateText = $(this).find("td:first").text().trim();
                                         $(this).attr("data-date", dateText);
                                     }
-
-                                    // Get amount from debit column (5th column) if not set
                                     if (!$(this).data("amount")) {
                                         const amountText = $(this).find("td:eq(4)").text().trim();
-                                        let cleanAmount = amountText.replace(/[^\d,.]/g, '');
-                                        cleanAmount = cleanAmount.replace(/,/g, '');
+                                        let cleanAmount = amountText.replace(/[^\d,.]/g, '').replace(/,/g, '');
                                         $(this).attr("data-amount", cleanAmount);
                                     }
-
-                                    // Get category from last cell if not set
                                     if (!$(this).data("category")) {
-                                        const categoryText = $(this).find("td:last").text().trim();
-                                        $(this).attr("data-category", categoryText);
+                                        const groupName = $(this).find(".category-cell").data("group");
+                                        if (groupName) {
+                                            $(this).attr("data-category", groupName);
+                                        }
                                     }
                                 });
                             }
@@ -374,83 +395,53 @@
                             function setDefaultDates() {
                                 const today = new Date();
                                 const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-                                // Format dates as YYYY-MM-DD
                                 const formatDate = (date) => {
                                     const year = date.getFullYear();
                                     const month = String(date.getMonth() + 1).padStart(2, '0');
                                     const day = String(date.getDate()).padStart(2, '0');
                                     return `${year}-${month}-${day}`;
                                 };
-
                                 $("#start-date").val(formatDate(startOfMonth));
                                 $("#end-date").val(formatDate(today));
                             }
 
                             // Function to parse dates correctly
                             function parseTransactionDate(dateStr) {
-                                // Check the format of dateStr and parse accordingly
                                 if (!dateStr) return null;
-
-                                console.log("Parsing date:", dateStr);
-
-                                // Handle DD/MM/YYYY HH:MM:SS format
                                 if (dateStr.includes('/') && dateStr.includes(':')) {
-                                    // Extract just the date part DD/MM/YYYY
                                     const datePart = dateStr.split(' ')[0];
                                     const parts = datePart.split('/');
-
                                     if (parts.length === 3) {
-                                        // Format is DD/MM/YYYY
                                         const day = parseInt(parts[0]);
-                                        const month = parseInt(parts[1]) - 1; // Months are 0-indexed in JS
+                                        const month = parseInt(parts[1]) - 1;
                                         const year = parseInt(parts[2]);
-
-                                        const date = new Date(year, month, day);
-                                        console.log("Parsed as DD/MM/YYYY with time:", date);
-                                        return date;
+                                        return new Date(year, month, day);
                                     }
-                                }
-                                // Handle DD/MM/YYYY format without time
-                                else if (dateStr.includes('/')) {
+                                } else if (dateStr.includes('/')) {
                                     const parts = dateStr.split('/');
                                     if (parts.length === 3) {
-                                        // Format is DD/MM/YYYY
                                         const day = parseInt(parts[0]);
-                                        const month = parseInt(parts[1]) - 1; // Months are 0-indexed in JS
+                                        const month = parseInt(parts[1]) - 1;
                                         const year = parseInt(parts[2]);
-
-                                        const date = new Date(year, month, day);
-                                        console.log("Parsed as DD/MM/YYYY:", date);
-                                        return date;
+                                        return new Date(year, month, day);
                                     }
+                                } else if (dateStr.includes('-')) {
+                                    return new Date(dateStr);
                                 }
-                                // Check if format is YYYY-MM-DD
-                                else if (dateStr.includes('-')) {
-                                    const date = new Date(dateStr);
-                                    console.log("Parsed as YYYY-MM-DD:", date);
-                                    return date;
-                                }
-
-                                // Try standard parsing as fallback
                                 const date = new Date(dateStr);
                                 if (!isNaN(date.getTime())) {
-                                    console.log("Parsed using standard method:", date);
                                     return date;
                                 }
-
                                 console.error("Failed to parse date:", dateStr);
                                 return null;
                             }
 
-                            // Function to apply all filters (category and time)
+                            // Function to apply all filters
                             function applyFilters() {
                                 const selectedCategory = $(".category-btn.active").data("category") || "all";
                                 const selectedTimeFilter = $(".time-filter-btn.active").data("timefilter") || "all";
                                 const startDate = $("#start-date").val() ? new Date($("#start-date").val()) : null;
                                 const endDate = $("#end-date").val() ? new Date($("#end-date").val()) : null;
-
-                                // Set end date to end of day
                                 if (endDate) {
                                     endDate.setHours(23, 59, 59, 999);
                                 }
@@ -468,20 +459,13 @@
                                     let showByCategory = (selectedCategory === "all" || rowCategory === selectedCategory);
                                     let showByTime = true;
 
-                                    // Apply time filter
                                     if (selectedTimeFilter && selectedTimeFilter !== "all") {
                                         const today = new Date();
-                                        const currentDay = today.getDay(); // 0 = Sunday, 6 = Saturday
-
-                                        // Calculate start of week (Sunday)
+                                        const currentDay = today.getDay();
                                         const startOfWeek = new Date(today);
                                         startOfWeek.setDate(today.getDate() - currentDay);
                                         startOfWeek.setHours(0, 0, 0, 0);
-
-                                        // Calculate start of month
                                         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-                                        // Calculate start of last month
                                         const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
                                         const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
 
@@ -493,11 +477,9 @@
                                             showByTime = rowDate >= startOfLastMonth && rowDate <= endOfLastMonth;
                                         }
                                     } else if (startDate && endDate) {
-                                        // Apply custom date range
                                         showByTime = rowDate >= startDate && rowDate <= endDate;
                                     }
 
-                                    // Show/hide based on combined filters
                                     if (showByCategory && showByTime) {
                                         $(this).show();
                                     } else {
@@ -515,7 +497,6 @@
                                     if (sortType === "date-asc" || sortType === "date-desc") {
                                         const dateAStr = $(a).data("date");
                                         const dateBStr = $(b).data("date");
-
                                         const dateA = parseTransactionDate(dateAStr);
                                         const dateB = parseTransactionDate(dateBStr);
 
@@ -523,31 +504,20 @@
                                         if (!dateA) return 1;
                                         if (!dateB) return -1;
 
-                                        return sortType === "date-asc" ?
-                                            dateA.getTime() - dateB.getTime() :
-                                            dateB.getTime() - dateA.getTime();
+                                        return sortType === "date-asc" ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
                                     } else {
-                                        // For amount sorting, extract and parse the amounts
                                         let amountAText = $(a).data("amount") || "0";
                                         let amountBText = $(b).data("amount") || "0";
-
                                         if (typeof amountAText !== 'string') amountAText = String(amountAText);
                                         if (typeof amountBText !== 'string') amountBText = String(amountBText);
-
-                                        // Clean up the amounts (remove currency symbols, commas)
                                         let cleanAmountA = amountAText.replace(/[^\d,.]/g, '').replace(/,/g, '');
                                         let cleanAmountB = amountBText.replace(/[^\d,.]/g, '').replace(/,/g, '');
-
                                         const amountA = parseFloat(cleanAmountA) || 0;
                                         const amountB = parseFloat(cleanAmountB) || 0;
-
-                                        return sortType === "amount-asc" ?
-                                            amountA - amountB :
-                                            amountB - amountA;
+                                        return sortType === "amount-asc" ? amountA - amountB : amountB - amountA;
                                     }
                                 });
 
-                                // Re-append sorted rows
                                 $.each(rows, function (index, row) {
                                     tbody.append(row);
                                 });
@@ -562,89 +532,55 @@
                                 const today = new Date();
                                 const currentMonth = today.getMonth();
                                 const currentYear = today.getFullYear();
-
-                                // Calculate start of week (Sunday)
                                 const currentDay = today.getDay();
                                 const startOfWeek = new Date(today);
                                 startOfWeek.setDate(today.getDate() - currentDay);
                                 startOfWeek.setHours(0, 0, 0, 0);
-
-                                // Calculate start and end of current month
                                 const startOfMonth = new Date(currentYear, currentMonth, 1);
                                 const endOfMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59, 999);
 
-                                console.log("Current month range:", startOfMonth, "to", endOfMonth);
-
                                 $(".transaction-row:visible").each(function () {
-                                    // Parse amount correctly - handle VND format with commas
                                     let amountText = $(this).data("amount") || "";
-                                    if (typeof amountText !== 'string') {
-                                        amountText = String(amountText);
-                                    }
-
-                                    // Extract just the number part from formats like "18,000 VND"
-                                    let cleanAmount = amountText.replace(/[^\d,.]/g, '');
-                                    // Replace commas with empty string (for thousand separators)
-                                    cleanAmount = cleanAmount.replace(/,/g, '');
-
+                                    if (typeof amountText !== 'string') amountText = String(amountText);
+                                    let cleanAmount = amountText.replace(/[^\d,.]/g, '').replace(/,/g, '');
                                     let amount = parseFloat(cleanAmount) || 0;
 
-                                    // Get amount from the debit column as backup
                                     if (amount === 0) {
-                                        const debitText = $(this).find("td:eq(4)").text().trim(); // 5th column (0-indexed)
+                                        const debitText = $(this).find("td:eq(4)").text().trim();
                                         if (debitText) {
-                                            let debitAmount = debitText.replace(/[^\d,.]/g, '');
-                                            debitAmount = debitAmount.replace(/,/g, '');
+                                            let debitAmount = debitText.replace(/[^\d,.]/g, '').replace(/,/g, '');
                                             const parsedDebit = parseFloat(debitAmount) || 0;
                                             if (parsedDebit > 0) {
-                                                console.log("Using debit amount instead:", parsedDebit);
                                                 amount = parsedDebit;
                                             }
                                         }
                                     }
 
-                                    // Parse date
                                     const rowDateStr = $(this).data("date");
                                     let rowDate = parseTransactionDate(rowDateStr);
-
                                     if (!rowDate) {
-                                        // Try to get date from first column as backup
                                         const dateCell = $(this).find("td:first").text().trim();
                                         const backupDate = parseTransactionDate(dateCell);
-
                                         if (!backupDate) {
                                             console.error("Could not parse date for row:", $(this));
                                             return;
                                         }
-
                                         rowDate = backupDate;
                                     }
 
-                                    console.log("Processing transaction:", rowDateStr || "unknown date", "parsed as", rowDate, "Amount:", amount);
-
-                                    // Add to current total (all visible transactions)
                                     currentTotal += amount;
-
-                                    // Check if transaction is in current month
                                     if (rowDate >= startOfMonth && rowDate <= endOfMonth) {
-                                        console.log("Adding to monthly total:", amount);
                                         monthlyTotal += amount;
                                     }
-
-                                    // Check if transaction is in current week
                                     if (rowDate >= startOfWeek && rowDate <= today) {
                                         weeklyTotal += amount;
                                     }
                                 });
 
-                                console.log("Calculated totals - Current:", currentTotal, "Monthly:", monthlyTotal, "Weekly:", weeklyTotal);
-
-                                // Format numbers with commas
                                 function formatNumber(num) {
                                     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                                 }
 
-                                // Update summary boxes
                                 $("#current-total").text(formatNumber(currentTotal.toFixed(0)) + " VND");
                                 $("#monthly-total").text(formatNumber(monthlyTotal.toFixed(0)) + " VND");
                                 $("#weekly-total").text(formatNumber(weeklyTotal.toFixed(0)) + " VND");
@@ -652,36 +588,136 @@
 
                             // Function to apply colors to categories
                             function applyColorsToCategories() {
-                                $(".transaction-row").each(function () {
+                                $(".category-cell").each(function () {
+                                    const groupName = $(this).data("group");
+                                    $(this).removeClass("cat-essential-expenses cat-personal-family cat-personal-development cat-entertainment-social cat-finance cat-work-business cat-others");
+                                    switch (groupName) {
+                                        case "Essential Expenses": $(this).addClass("cat-essential-expenses"); break;
+                                        case "Personal & Family": $(this).addClass("cat-personal-family"); break;
+                                        case "Personal Development": $(this).addClass("cat-personal-development"); break;
+                                        case "Entertainment & Social": $(this).addClass("cat-entertainment-social"); break;
+                                        case "Finance": $(this).addClass("cat-finance"); break;
+                                        case "Work / Business": $(this).addClass("cat-work-business"); break;
+                                        case "Others": $(this).addClass("cat-others"); break;
+                                    }
+                                });
+                            }
+
+                            // Function to update charts
+                            function updateCharts() {
+                                // Data for pie chart
+                                const categoryTotals = {
+                                    "Essential Expenses": 0,
+                                    "Personal & Family": 0,
+                                    "Personal Development": 0,
+                                    "Entertainment & Social": 0,
+                                    "Finance": 0,
+                                    "Work / Business": 0,
+                                    "Others": 0
+                                };
+
+                                // Data for line chart (daily totals)
+                                const dailyTotals = {};
+
+                                $(".transaction-row:visible").each(function () {
                                     const category = $(this).data("category");
-                                    const categoryCell = $(this).find("td:last-child");
+                                    let amountText = $(this).data("amount") || "";
+                                    if (typeof amountText !== 'string') amountText = String(amountText);
+                                    let cleanAmount = amountText.replace(/[^\d,.]/g, '').replace(/,/g, '');
+                                    let amount = parseFloat(cleanAmount) || 0;
 
-                                    // Remove any existing color classes
-                                    categoryCell.removeClass("cat-essential-expenses cat-personal-family cat-personal-development cat-entertainment-social cat-finance cat-work-business cat-others");
+                                    if (amount === 0) {
+                                        const debitText = $(this).find("td:eq(4)").text().trim();
+                                        if (debitText) {
+                                            let debitAmount = debitText.replace(/[^\d,.]/g, '').replace(/,/g, '');
+                                            amount = parseFloat(debitAmount) || 0;
+                                        }
+                                    }
 
-                                    // Apply the appropriate class based on category
-                                    switch (category) {
-                                        case "Essential Expenses":
-                                            categoryCell.addClass("cat-essential-expenses");
-                                            break;
-                                        case "Personal & Family":
-                                            categoryCell.addClass("cat-personal-family");
-                                            break;
-                                        case "Personal Development":
-                                            categoryCell.addClass("cat-personal-development");
-                                            break;
-                                        case "Entertainment & Social":
-                                            categoryCell.addClass("cat-entertainment-social");
-                                            break;
-                                        case "Finance":
-                                            categoryCell.addClass("cat-finance");
-                                            break;
-                                        case "Work / Business":
-                                            categoryCell.addClass("cat-work-business");
-                                            break;
-                                        case "Others":
-                                            categoryCell.addClass("cat-others");
-                                            break;
+                                    if (category in categoryTotals) {
+                                        categoryTotals[category] += amount;
+                                    }
+
+                                    const rowDateStr = $(this).data("date");
+                                    const rowDate = parseTransactionDate(rowDateStr);
+                                    if (rowDate) {
+                                        const dateKey = rowDate.toISOString().split('T')[0]; // YYYY-MM-DD
+                                        dailyTotals[dateKey] = (dailyTotals[dateKey] || 0) + amount;
+                                    }
+                                });
+
+                                // Prepare pie chart data
+                                const pieData = {
+                                    labels: Object.keys(categoryTotals).filter(cat => categoryTotals[cat] > 0),
+                                    datasets: [{
+                                        data: Object.values(categoryTotals).filter(val => val > 0),
+                                        backgroundColor: Object.keys(categoryTotals).filter(cat => categoryTotals[cat] > 0).map(cat => categoryColors[cat])
+                                    }]
+                                };
+
+                                // Prepare line chart data
+                                const dates = Object.keys(dailyTotals).sort();
+                                const lineData = {
+                                    labels: dates,
+                                    datasets: [{
+                                        label: 'Expenses Over Time',
+                                        data: dates.map(date => dailyTotals[date]),
+                                        borderColor: '#d94f82',
+                                        fill: false
+                                    }]
+                                };
+
+                                // Destroy existing charts if they exist
+                                if (categoryPieChart) {
+                                    categoryPieChart.destroy();
+                                }
+                                if (expenseTrendChart) {
+                                    expenseTrendChart.destroy();
+                                }
+
+                                // Create pie chart
+                                categoryPieChart = new Chart(document.getElementById('categoryPieChart'), {
+                                    type: 'pie',
+                                    data: pieData,
+                                    options: {
+                                        plugins: {
+                                            title: {
+                                                display: true,
+                                                text: 'Tỉ lệ chi tiêu theo thể loại'
+                                            },
+                                            legend: {
+                                                position: 'bottom'
+                                            }
+                                        }
+                                    }
+                                });
+
+                                // Create line chart
+                                expenseTrendChart = new Chart(document.getElementById('expenseTrendChart'), {
+                                    type: 'line',
+                                    data: lineData,
+                                    options: {
+                                        plugins: {
+                                            title: {
+                                                display: true,
+                                                text: 'Xu hướng chi tiêu theo thời gian'
+                                            }
+                                        },
+                                        scales: {
+                                            x: {
+                                                title: {
+                                                    display: true,
+                                                    text: 'Date'
+                                                }
+                                            },
+                                            y: {
+                                                title: {
+                                                    display: true,
+                                                    text: 'Amount (VND)'
+                                                },
+                                                beginAtZero: true
+                                            }
+                                        }
                                     }
                                 });
                             }
