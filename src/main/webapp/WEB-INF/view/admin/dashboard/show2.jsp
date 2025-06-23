@@ -310,7 +310,7 @@
                     let charts = {};
 
                     function formatVND(amount) {
-                        return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ';
+                        return new Intl.NumberFormat('vi-VN').format(amount) + 'K VNĐ';
                     }
 
                     function parseVietnameseDate(dateString) {
